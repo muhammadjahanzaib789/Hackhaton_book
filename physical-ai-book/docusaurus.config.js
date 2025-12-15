@@ -117,7 +117,7 @@ const config = {
             items: [
               {
                 label: 'GitHub',
-                href: 'https://github.com/your-username/physical-ai-book',
+                href: 'https://github.com/your-username/Hackhaton_book',
               },
               {
                 label: 'ROS 2 Docs',
