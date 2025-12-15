@@ -69,7 +69,7 @@ const config = {
             label: 'Modules',
           },
           {
-            href: 'https://github.com/your-username/physical-ai-book',
+            href: 'https://github.com/muhammadjahanzaib789/Hackhaton_book',
             label: 'GitHub',
             position: 'right',
           },
