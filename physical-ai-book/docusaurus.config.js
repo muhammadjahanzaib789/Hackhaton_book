@@ -14,7 +14,7 @@ const config = {
   // Set the production url of your site here
   url: 'https://muhammadjahanzaib789.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
-  baseUrl: '/physical-ai-book/',
+  baseUrl: '/Hackhaton_book/',
 
   // GitHub pages deployment config
   organizationName: 'muhammadjahanzaib789', // Usually your GitHub org/user name
