@@ -18,7 +18,7 @@ const config = {
 
   // GitHub pages deployment config
   organizationName: 'muhammadjahanzaib789', // Usually your GitHub org/user name
-  projectName: 'physical-ai-book', // Usually your repo name
+  projectName: 'Hackhaton_book', // Usually your repo name
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
