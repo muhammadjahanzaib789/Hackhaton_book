@@ -14,7 +14,7 @@ const config = {
   // Set the production url of your site here
   url: 'https://muhammadjahanzaib789.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
-  baseUrl: '/',
+  baseUrl: '/physical-ai-book/',
 
   // GitHub pages deployment config
   organizationName: 'muhammadjahanzaib789', // Usually your GitHub org/user name
@@ -40,7 +40,7 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           editUrl:
-            'https://github.com/your-username/physical-ai-book/tree/main/',
+            'https://github.com/muhammadjahanzaib789/physical-ai-book/tree/main/',
         },
         blog: false, // Disable blog
         theme: {
@@ -117,7 +117,8 @@ const config = {
             items: [
               {
                 label: 'GitHub',
-                href: 'https://github.com/your-username/Hackhaton_book',
+                href: 'https://github.com/muhammadjahanzaib789/Hackhaton_book',
+
               },
               {
                 label: 'ROS 2 Docs',
