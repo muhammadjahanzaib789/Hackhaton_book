@@ -1,0 +1,8 @@
+{
+  "label": "Module 2: The Digital Twin",
+  "position": 3,
+  "link": {
+    "type": "generated-index",
+    "description": "Create physics-accurate humanoid simulations using Gazebo and Unity for safe iteration before hardware deployment."
+  }
+}

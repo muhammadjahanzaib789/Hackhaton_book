@@ -1,0 +1,8 @@
+{
+  "label": "Module 4: Vision-Language-Action",
+  "position": 5,
+  "link": {
+    "type": "generated-index",
+    "description": "Enable natural language control of robots using Whisper, LLM task planning, and ROS 2 action execution."
+  }
+}
