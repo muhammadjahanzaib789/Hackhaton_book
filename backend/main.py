@@ -72,10 +72,16 @@ def get_all_urls(base_url: str) -> List[str]:
             url = loc.text.strip()
             # Filter for /docs/ paths only
             if "/docs/" in url:
-                urls.append(url)
+                # Rewrite URL to use TARGET_URL base instead of sitemap base
+                # This handles cases where sitemap has wrong base URL
+                parsed_url = urlparse(url)
+                parsed_base = urlparse(base_url)
+                rewritten_url = f"{parsed_base.scheme}://{parsed_base.netloc}{parsed_url.path}"
+                urls.append(rewritten_url)
+                logger.debug(f"Rewrote {url} -> {rewritten_url}")
 
         if urls:
-            logger.info(f"Found {len(urls)} URLs from sitemap")
+            logger.info(f"Found {len(urls)} URLs from sitemap (rewritten to {urlparse(base_url).netloc})")
             return sorted(set(urls))  # Deduplicate and sort
         else:
             logger.warning("Sitemap found but no /docs/ URLs extracted")

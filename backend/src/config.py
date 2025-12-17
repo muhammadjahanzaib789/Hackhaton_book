@@ -17,6 +17,14 @@ class Settings(BaseSettings):
     openrouter_api_key: str
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
 
+    # OpenAI API Configuration
+    openai_api_key: str
+    openai_agent_id: str = ""
+    openai_model: str = "gpt-4-turbo-preview"
+
+    # Cohere API Configuration
+    cohere_api_key: str
+
     # Qdrant Cloud Configuration
     qdrant_url: str
     qdrant_api_key: str
@@ -40,6 +48,7 @@ class Settings(BaseSettings):
     # LLM Configuration
     llm_model: str = "openai/gpt-4-turbo-preview"
     embedding_model: str = "qwen/qwen3-embedding-8b"
+    cohere_model: str = "embed-english-v3.0"  # For retrieval validation
     llm_temperature: float = 0.7
     llm_max_tokens: int = 2000
     llm_timeout: int = 30  # seconds

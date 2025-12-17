@@ -44,7 +44,10 @@ const config = {
         },
         blog: false, // Disable blog
         theme: {
-          customCss: require.resolve('./src/css/custom.css'),
+          customCss: [
+            require.resolve('./src/css/custom.css'),
+            require.resolve('./src/css/chatbot.css'), // Chatbot CSS
+          ],
         },
       }),
     ],

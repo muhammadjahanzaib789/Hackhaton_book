@@ -15,6 +15,7 @@ from .db.qdrant_client import QdrantVectorClient, qdrant_client as _qdrant_clien
 
 # Import routers
 from .api.routes import health, index, query
+from .api import retrieval, validation, agent
 
 # Import middleware
 from .api.middleware import RequestLoggingMiddleware, RateLimitMiddleware
@@ -124,6 +125,9 @@ app.add_middleware(RateLimitMiddleware, max_requests=20, window_seconds=60)
 app.include_router(health.router, prefix="/v1", tags=["Health"])
 app.include_router(index.router, prefix="/v1/admin", tags=["Admin"])
 app.include_router(query.router, prefix="/v1", tags=["Chat"])
+app.include_router(retrieval.router, prefix="/v1", tags=["Retrieval"])
+app.include_router(validation.router, prefix="/v1", tags=["Validation"])
+app.include_router(agent.router, prefix="/v1", tags=["Agent"])
 
 # Root endpoint
 @app.get("/")

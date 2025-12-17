@@ -6,6 +6,7 @@ FastAPI backend for the integrated RAG chatbot embedded in the Physical AI & Hum
 
 - **Full-Book Query Mode**: Semantic search across entire indexed book content
 - **Selected-Text Mode**: Strict constraint to answer only from user-selected passages
+- **RAG Agent**: OpenAI-powered agent with retrieval tool for grounded responses
 - **Smart Caching**: LRU cache for query embeddings (100 entries, 1-hour TTL)
 - **Source Citations**: Automatic generation of Docusaurus navigation links
 - **Performance Optimized**: <3s response time for 95% of queries
@@ -118,6 +119,121 @@ Content-Type: application/json
 }
 ```
 
+### Query RAG Agent
+```http
+POST /v1/agent/query
+Content-Type: application/json
+
+{
+  "query": "What are the key principles of embodied cognition in physical AI?",
+  "max_tokens": 500,
+  "temperature": 0.7,
+  "metadata": {
+    "user_id": "optional-user-id",
+    "session_id": "optional-session-id"
+  }
+}
+```
+
+**Parameters**:
+- `query`: The question to ask the RAG Agent (required)
+- `max_tokens`: Maximum number of tokens in the response (optional, default: 500, range: 1-2000)
+- `temperature`: Controls randomness in the response (optional, default: 0.7, range: 0.0-2.0)
+- `metadata`: Additional metadata for tracking and analytics (optional)
+
+**Response**:
+```json
+{
+  "answer": "The RAG Agent provides grounded responses based on retrieved information...",
+  "citations": [
+    {
+      "id": "citation_1",
+      "source_document": "physical_ai_book.pdf",
+      "chunk_text": "Retrieved text chunk...",
+      "relevance_score": 0.85,
+      "url": "/documents/physical_ai_book.pdf#page=15",
+      "document_title": "Physical AI Fundamentals",
+      "page_number": 15,
+      "section_title": "Embodied Cognition",
+      "position_in_document": 15,
+      "context_before": "Previous context...",
+      "context_after": "Following context...",
+      "citation_format": "APA",
+      "access_date": "2024-01-01T10:00:00"
+    }
+  ],
+  "query": "What are the key principles of embodied cognition?",
+  "tokens_used": 150,
+  "confidence": 0.85
+}
+```
+
+### Validate Agent Response
+```http
+POST /v1/agent/validate
+Content-Type: application/json
+
+{
+  "query": "What are the key principles of embodied cognition?",
+  "response": "The key principles of embodied cognition...",
+  "citations": [
+    {
+      "id": "citation_1",
+      "source_document": "physical_ai_book.pdf",
+      "chunk_text": "Retrieved text chunk...",
+      "relevance_score": 0.85
+    }
+  ]
+}
+```
+
+**Response**:
+```json
+{
+  "grounding_score": 0.85,
+  "citation_accuracy": 0.9,
+  "is_valid": true,
+  "feedback": "Response appears to be well-grounded with accurate citations.",
+  "timestamp": "2024-01-01T10:00:00"
+}
+```
+
+### Agent Health Check
+```http
+GET /v1/agent/health
+```
+
+**Response**:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-01T10:00:00",
+  "service": "rag-agent"
+}
+```
+
+### Submit Agent Feedback
+```http
+POST /v1/agent/feedback
+Content-Type: application/json
+
+{
+  "query": "What are the key principles of embodied cognition?",
+  "response": "The key principles of embodied cognition...",
+  "feedback": "The response was helpful and accurate.",
+  "rating": 5
+}
+```
+
+**Response**:
+```json
+{
+  "status": "received",
+  "message": "Thank you for your feedback. This will help improve future responses.",
+  "feedback_id": "feedback_1234567890"
+}
+```
+
 ## Project Structure
 
 ```
@@ -128,12 +244,20 @@ backend/
 │   │   │   ├── health.py       # Health check endpoint
 │   │   │   ├── index.py        # Content indexing endpoint
 │   │   │   └── query.py        # Main query endpoint
+│   │   ├── agent.py            # RAG Agent API endpoints
+│   │   ├── retrieval.py        # Retrieval API endpoints
+│   │   ├── validation.py       # Validation API endpoints
 │   │   └── middleware.py       # Logging & rate limiting
+│   ├── agents/                  # OpenAI Agents SDK components
+│   │   ├── __init__.py         # Agent module initialization
+│   │   ├── rag_agent.py        # Core RAG Agent implementation
+│   │   └── retrieval_tool.py   # Retrieval tool for agent
 │   ├── db/
 │   │   ├── neon_client.py      # Postgres connection pooling
 │   │   ├── qdrant_client.py    # Vector DB operations
 │   │   └── migrations/         # SQL migration files
 │   ├── models/                  # Pydantic models
+│   │   ├── agent.py            # Agent request/response models
 │   │   ├── chunk.py
 │   │   ├── session.py
 │   │   ├── query.py
@@ -144,7 +268,11 @@ backend/
 │   │   ├── embeddings.py       # Qwen3 embedding generation
 │   │   ├── retrieval.py        # Vector search + caching
 │   │   ├── llm_generation.py   # Answer generation
+│   │   ├── agent_service.py    # Agent orchestration service
 │   │   └── chat_logger.py      # Session/query/response logging
+│   ├── utils/
+│   │   ├── agent_logging.py    # Agent-specific logging
+│   │   └── agent_errors.py     # Agent-specific error handling
 │   ├── config.py                # Pydantic Settings
 │   └── main.py                  # FastAPI app
 ├── requirements.txt
@@ -174,6 +302,14 @@ backend/
 - 5-second timeout enforcement
 - Temperature: 0.7, Max tokens: 500
 
+### AgentService (`src/services/agent_service.py`)
+- Core orchestration for the RAG Agent system
+- Integration with OpenAI Agents SDK
+- Query processing with retrieval tool integration
+- Response generation with proper grounding validation
+- Source citation formatting and relevance scoring
+- Performance metrics and monitoring
+
 ### ChatLoggerService (`src/services/chat_logger.py`)
 - Session management (create, update status)
 - Query/response logging
@@ -196,6 +332,9 @@ All configuration via environment variables (see `.env.example`):
 | `CHUNK_SIZE` | Token count per chunk | 400 |
 | `CHUNK_OVERLAP` | Overlap between chunks | 80 |
 | `CORS_ORIGINS` | Allowed origins (comma-separated) | `http://localhost:3000` |
+| `OPENAI_API_KEY` | OpenAI API key for agent functionality | Required for agent features |
+| `OPENAI_AGENT_ID` | OpenAI Assistant ID for the RAG agent | Optional |
+| `OPENAI_MODEL` | OpenAI model for agent operations | `gpt-4-turbo-preview` |
 
 ## Database Schema
 
@@ -237,6 +376,9 @@ pytest tests/ -v
 # Health check
 curl http://localhost:8000/v1/health
 
+# Agent health check
+curl http://localhost:8000/v1/agent/health
+
 # Query (full-book mode)
 curl -X POST http://localhost:8000/v1/query \
   -H "Content-Type: application/json" \
@@ -249,6 +391,41 @@ curl -X POST http://localhost:8000/v1/query \
     "query": "What does this mean?",
     "mode": "selected_text",
     "selected_text": "ROS 2 uses a distributed architecture..."
+  }'
+
+# Query RAG Agent
+curl -X POST http://localhost:8000/v1/agent/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What are the key principles of embodied cognition?",
+    "max_tokens": 500,
+    "temperature": 0.7
+  }'
+
+# Validate agent response
+curl -X POST http://localhost:8000/v1/agent/validate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What are the key principles of embodied cognition?",
+    "response": "The key principles of embodied cognition...",
+    "citations": [
+      {
+        "id": "citation_1",
+        "source_document": "physical_ai_book.pdf",
+        "chunk_text": "Retrieved text chunk...",
+        "relevance_score": 0.85
+      }
+    ]
+  }'
+
+# Submit agent feedback
+curl -X POST http://localhost:8000/v1/agent/feedback \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "What are the key principles of embodied cognition?",
+    "response": "The key principles of embodied cognition...",
+    "feedback": "The response was helpful and accurate.",
+    "rating": 5
   }'
 ```
 
