@@ -12,12 +12,12 @@ const config = {
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
-  url: 'https://maleeha234.github.io',
+  url: 'https://sheheryarkhan2003.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   baseUrl: '/',
 
   // GitHub pages deployment config
-  organizationName: 'maleeha234', // Usually your GitHub org/user name
+  organizationName: 'sheheryarkhan2003', // Usually your GitHub org/user name
   projectName: 'physical-ai-book', // Usually your repo name
 
   onBrokenLinks: 'throw',
@@ -40,7 +40,7 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           editUrl:
-            'https://github.com/maleeha234/physical-ai-book/tree/main/',
+            'https://github.com/sheheryarkhan2003/physical_ai_native-book/tree/main/',
         },
         blog: false, // Disable blog
         theme: {
@@ -69,7 +69,7 @@ const config = {
             label: 'Modules',
           },
           {
-            href: 'https://github.com/maleeha234/hackhaton-01',
+            href: 'https://github.com/sheheryarkhan2003/physical_ai_native-book',
             label: 'GitHub',
             position: 'right',
           },
@@ -117,7 +117,7 @@ const config = {
             items: [
               {
                 label: 'GitHub',
-                href: 'https://github.com/maleeha234/physical-ai-book',
+                href: 'https://github.com/sheheryarkhan2003/physical_ai_native-book',
               },
               {
                 label: 'ROS 2 Docs',
