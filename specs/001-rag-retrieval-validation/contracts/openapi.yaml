@@ -1,0 +1,366 @@
+# API Contracts: RAG Retrieval Validation
+
+## OpenAPI Specification
+
+```yaml
+openapi: 3.0.1
+info:
+  title: RAG Retrieval Validation API
+  description: API for semantic search and validation of RAG retrieval
+  version: 1.0.0
+paths:
+  /retrieval/query:
+    post:
+      summary: Execute semantic search query against vector database
+      description: Accepts a natural language query and returns semantically similar document chunks
+      operationId: query_retrieval
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Query'
+      responses:
+        '200':
+          description: Successful retrieval response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetrievalResponse'
+        '400':
+          description: Invalid query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error during retrieval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /retrieval/batch:
+    post:
+      summary: Execute batch semantic search queries
+      description: Processes multiple queries in a single request
+      operationId: batch_query_retrieval
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BatchQueryRequest'
+      responses:
+        '200':
+          description: Batch retrieval response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchQueryResponse'
+        '400':
+          description: Invalid batch query parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error during batch retrieval
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /validation/run:
+    post:
+      summary: Run retrieval validation benchmark
+      description: Executes a set of validation queries and computes evaluation metrics
+      operationId: run_validation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ValidationBenchmark'
+      responses:
+        '200':
+          description: Validation results with computed metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationResponse'
+        '400':
+          description: Invalid validation parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Server error during validation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    Query:
+      type: object
+      properties:
+        query_text:
+          type: string
+          description: The natural language query text
+          example: "What is gradient descent?"
+        top_k:
+          type: integer
+          description: Number of results to return
+          minimum: 1
+          maximum: 50
+          default: 5
+          example: 5
+        similarity_threshold:
+          type: number
+          description: Minimum similarity score for results
+          minimum: 0.0
+          maximum: 1.0
+          default: 0.5
+          example: 0.5
+        filters:
+          type: object
+          description: Metadata filters (URL, section, chunk position)
+          additionalProperties: true
+          example:
+            url: "https://example.com/docs/chapter-3"
+            section: "optimization"
+      required:
+        - query_text
+      example:
+        query_text: "What is gradient descent?"
+        top_k: 5
+        similarity_threshold: 0.5
+        filters:
+          url: "https://example.com/docs/chapter-3"
+
+    RetrievalResult:
+      type: object
+      properties:
+        chunk_id:
+          type: string
+          description: Unique identifier for the chunk in the vector database
+          example: "1234567890abcdef"
+        text:
+          type: string
+          description: The content of the retrieved document chunk
+          example: "Gradient descent is an optimization algorithm used in machine learning..."
+        url:
+          type: string
+          description: The source URL of the document
+          format: uri
+          example: "https://example.com/docs/chapter-2"
+        section:
+          type: string
+          description: The section name (if applicable)
+          example: "optimization-algorithms"
+        chunk_index:
+          type: integer
+          description: The position of this chunk in the original document
+          example: 3
+        similarity_score:
+          type: number
+          description: Cosine similarity score (0.0-1.0)
+          minimum: 0.0
+          maximum: 1.0
+          example: 0.87
+        timestamp:
+          type: string
+          description: When the chunk was indexed (if available)
+          format: date-time
+          example: "2023-10-20T14:30:00Z"
+      required:
+        - chunk_id
+        - text
+        - url
+        - chunk_index
+        - similarity_score
+
+    RetrievalResponse:
+      type: object
+      properties:
+        query_id:
+          type: string
+          description: The ID of the original query
+          example: "query-12345"
+        results:
+          type: array
+          description: The ranked list of retrieval results
+          items:
+            $ref: '#/components/schemas/RetrievalResult'
+        query_latency:
+          type: number
+          description: Total query latency in seconds
+          example: 1.24
+        embedding_generation_time:
+          type: number
+          description: Time spent generating embeddings in seconds
+          example: 0.56
+        qdrant_search_time:
+          type: number
+          description: Time spent searching in Qdrant in seconds
+          example: 0.42
+        post_processing_time:
+          type: number
+          description: Time spent on post-processing in seconds
+          example: 0.26
+        status:
+          type: string
+          description: Status of the retrieval operation
+          enum: [success, partial, error]
+          example: "success"
+        error_message:
+          type: string
+          description: Error message if status is 'error'
+          example: null
+      required:
+        - query_id
+        - results
+        - query_latency
+        - status
+
+    BatchQueryRequest:
+      type: object
+      properties:
+        queries:
+          type: array
+          description: List of individual query objects
+          items:
+            $ref: '#/components/schemas/Query'
+        batch_id:
+          type: string
+          description: Unique identifier for the batch
+          example: "batch-67890"
+      required:
+        - queries
+
+    BatchQueryResponse:
+      type: object
+      properties:
+        batch_id:
+          type: string
+          description: The ID of the batch request
+          example: "batch-67890"
+        responses:
+          type: array
+          description: Individual responses for each query in the batch
+          items:
+            $ref: '#/components/schemas/RetrievalResponse'
+        batch_latency:
+          type: number
+          description: Total latency for the entire batch in seconds
+          example: 3.45
+      required:
+        - batch_id
+        - responses
+        - batch_latency
+
+    ValidationBenchmark:
+      type: object
+      properties:
+        benchmark_name:
+          type: string
+          description: Name of the benchmark set
+          example: "book-chapter-validation"
+        question_set:
+          type: array
+          description: List of query questions for testing
+          items:
+            type: string
+          example: ["What is gradient descent?", "Explain backpropagation"]
+        ground_truth_mappings:
+          type: object
+          description: Mapping of queries to expected relevant document IDs
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            "What is gradient descent?": ["doc-123", "doc-456"]
+            "Explain backpropagation": ["doc-789"]
+        metrics:
+          type: array
+          description: List of metrics to compute
+          items:
+            type: string
+            enum: [precision@k, recall@k, MRR]
+          example: ["precision@5", "recall@10", "MRR"]
+      required:
+        - benchmark_name
+        - question_set
+        - ground_truth_mappings
+        - metrics
+
+    ValidationResponse:
+      type: object
+      properties:
+        benchmark_name:
+          type: string
+          description: Name of the benchmark set
+          example: "book-chapter-validation"
+        results:
+          type: array
+          description: Individual results for each query
+          items:
+            $ref: '#/components/schemas/RetrievalResponse'
+        metrics:
+          type: object
+          description: Computed evaluation metrics
+          properties:
+            precision_at_k:
+              type: number
+              minimum: 0.0
+              maximum: 1.0
+              example: 0.72
+            recall_at_k:
+              type: number
+              minimum: 0.0
+              maximum: 1.0
+              example: 0.68
+            mrr:
+              type: number
+              minimum: 0.0
+              maximum: 1.0
+              example: 0.75
+          required:
+            - precision_at_k
+            - recall_at_k
+            - mrr
+        validation_latency:
+          type: number
+          description: Total time for validation execution in seconds
+          example: 24.56
+      required:
+        - benchmark_name
+        - results
+        - metrics
+        - validation_latency
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Query text is required"
+        error_code:
+          type: string
+          description: Error code
+          example: "INVALID_QUERY"
+        timestamp:
+          type: string
+          description: When the error occurred
+          format: date-time
+          example: "2023-10-20T14:30:00Z"
+      required:
+        - error
+        - error_code
+        - timestamp
+```

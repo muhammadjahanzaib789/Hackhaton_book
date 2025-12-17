@@ -1,0 +1,386 @@
+openapi: 3.0.3
+info:
+  title: RAG Chatbot API
+  description: |
+    Backend API for the Integrated RAG Chatbot embedded in the Physical AI & Humanoid Robotics book.
+
+    This API provides endpoints for:
+    - Querying the book content (full-book or selected-text mode)
+    - Indexing book content for semantic search
+    - Health checks
+
+    **Authentication**: API keys are managed server-side. Client requests do not require authentication (public endpoint).
+  version: 1.0.0
+  contact:
+    name: Physical AI Book Team
+    url: https://github.com/muhammadjahanzaib789/physical-ai-book
+
+servers:
+  - url: https://api.example.com/v1
+    description: Production server (TBD)
+  - url: http://localhost:8000/v1
+    description: Local development server
+
+tags:
+  - name: Query
+    description: Query endpoints for chatbot interaction
+  - name: Admin
+    description: Administrative endpoints (indexing, maintenance)
+  - name: Health
+    description: Health check endpoints
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the API and its dependencies (Qdrant, Neon Postgres, OpenRouter).
+      operationId: healthCheck
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '503':
+          description: Service is unhealthy (dependency failure)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /query:
+    post:
+      summary: Submit a query to the chatbot
+      description: |
+        Submit a question to the RAG chatbot. The chatbot will:
+        1. Generate embeddings for the query (or selected text if provided)
+        2. Retrieve relevant book chunks from Qdrant
+        3. Generate an answer using OpenRouter LLM
+        4. Return the answer with source citations
+
+        **Mode**: If `selected_text` is provided, the system operates in selected-text mode (only searches within the provided text). Otherwise, it performs a full-book search.
+      operationId: submitQuery
+      tags:
+        - Query
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueryRequest'
+            examples:
+              full_book_query:
+                summary: Full-book query
+                value:
+                  query: "What are the key components of a robotic control system?"
+                  session_id: "550e8400-e29b-41d4-a716-446655440000"
+              selected_text_query:
+                summary: Selected-text query
+                value:
+                  query: "Explain this in simpler terms"
+                  session_id: "550e8400-e29b-41d4-a716-446655440000"
+                  selected_text: "The Robot Operating System (ROS) provides a structured communications layer above the host operating systems of a heterogeneous compute cluster."
+      responses:
+        '200':
+          description: Query processed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryResponse'
+        '400':
+          description: Invalid request (e.g., query too short, selected text too brief)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '429':
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error (LLM or vector search failure)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Service unavailable (dependency down)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /index:
+    post:
+      summary: Index book content (admin)
+      description: |
+        **Admin endpoint**: Parses Markdown files from the book content directory, chunks the text, generates embeddings, and stores them in Qdrant and Neon Postgres.
+
+        This endpoint should be called:
+        - After initial deployment
+        - When book content is updated (new chapters, edits)
+
+        **Note**: This operation may take several minutes for a full book re-index.
+      operationId: indexContent
+      tags:
+        - Admin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IndexRequest'
+      responses:
+        '200':
+          description: Indexing completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IndexResponse'
+        '400':
+          description: Invalid request (e.g., invalid content_path)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Indexing failed (embedding generation or storage error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    QueryRequest:
+      type: object
+      required:
+        - query
+        - session_id
+      properties:
+        query:
+          type: string
+          minLength: 5
+          maxLength: 500
+          description: The user's question
+          example: "What are the key components of a robotic control system?"
+        session_id:
+          type: string
+          format: uuid
+          description: Unique identifier for the chat session (generated client-side)
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        selected_text:
+          type: string
+          minLength: 10
+          maxLength: 5000
+          description: Text selected by the user (optional, triggers selected-text mode)
+          example: "The Robot Operating System (ROS) provides a structured communications layer..."
+          nullable: true
+
+    QueryResponse:
+      type: object
+      required:
+        - query_id
+        - response_text
+        - citations
+        - mode
+        - processing_time_ms
+      properties:
+        query_id:
+          type: string
+          format: uuid
+          description: Unique identifier for this query
+          example: "660e8400-e29b-41d4-a716-446655440001"
+        response_text:
+          type: string
+          description: The chatbot's answer
+          example: "A robotic control system consists of sensors (e.g., cameras, LiDAR), actuators (motors, servos), a controller (e.g., ROS 2 nodes), and a planning module for decision-making."
+        citations:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/SourceCitation'
+          description: List of source citations supporting the answer
+        mode:
+          type: string
+          enum: [full_book, selected_text]
+          description: Query mode used
+          example: "full_book"
+        processing_time_ms:
+          type: integer
+          minimum: 0
+          description: Total processing time in milliseconds
+          example: 2340
+        confidence_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Confidence score from the LLM (if available)
+          example: 0.87
+          nullable: true
+
+    SourceCitation:
+      type: object
+      required:
+        - chapter_name
+        - relevance_score
+      properties:
+        citation_id:
+          type: string
+          format: uuid
+          description: Unique identifier for this citation
+          example: "770e8400-e29b-41d4-a716-446655440002"
+        chapter_name:
+          type: string
+          description: Chapter title
+          example: "Chapter 1: Introduction to ROS 2"
+        section_name:
+          type: string
+          description: Section or subsection title
+          example: "1.2 Core Concepts"
+          nullable: true
+        page_number:
+          type: integer
+          minimum: 1
+          description: Page number (if applicable)
+          example: 15
+          nullable: true
+        relevance_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Similarity score from vector search (higher = more relevant)
+          example: 0.92
+        excerpt:
+          type: string
+          maxLength: 500
+          description: Short snippet of the cited text
+          example: "ROS 2 uses a distributed architecture with nodes communicating via topics, services, and actions..."
+          nullable: true
+        link:
+          type: string
+          format: uri
+          description: URL anchor to the exact location in the book
+          example: "/docs/module-01/lesson-01#ros2-core-concepts"
+          nullable: true
+
+    IndexRequest:
+      type: object
+      required:
+        - content_path
+      properties:
+        content_path:
+          type: string
+          description: Path to the book content directory (relative to repository root)
+          example: "physical-ai-book/docs/"
+        force_reindex:
+          type: boolean
+          description: If true, delete existing chunks and re-index from scratch
+          example: false
+          default: false
+
+    IndexResponse:
+      type: object
+      required:
+        - status
+        - chunks_indexed
+        - processing_time_ms
+      properties:
+        status:
+          type: string
+          enum: [success, partial_success, failed]
+          description: Indexing status
+          example: "success"
+        chunks_indexed:
+          type: integer
+          minimum: 0
+          description: Number of chunks successfully indexed
+          example: 1247
+        failed_files:
+          type: array
+          items:
+            type: string
+          description: List of files that failed to index
+          example: []
+        processing_time_ms:
+          type: integer
+          minimum: 0
+          description: Total indexing time in milliseconds
+          example: 45320
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+          description: Overall service status
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          description: Health check timestamp
+          example: "2025-12-17T12:34:56Z"
+        dependencies:
+          type: object
+          properties:
+            qdrant:
+              $ref: '#/components/schemas/DependencyStatus'
+            neon_postgres:
+              $ref: '#/components/schemas/DependencyStatus'
+            openrouter:
+              $ref: '#/components/schemas/DependencyStatus'
+
+    DependencyStatus:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [up, down, degraded]
+          description: Dependency health status
+          example: "up"
+        latency_ms:
+          type: integer
+          minimum: 0
+          description: Response latency in milliseconds
+          example: 45
+          nullable: true
+        error:
+          type: string
+          description: Error message if dependency is down
+          example: null
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code or type
+          example: "INVALID_REQUEST"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Query text must be between 5 and 500 characters"
+        details:
+          type: object
+          description: Additional error details (e.g., validation errors)
+          nullable: true
+          example:
+            field: "query"
+            constraint: "minLength"

@@ -1,0 +1,150 @@
+openapi: 3.0.0
+info:
+  title: OpenAI RAG Agent API
+  description: API for interacting with the OpenAI RAG Agent that answers questions grounded in book content
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000/v1
+    description: Development server
+
+paths:
+  /agent/query:
+    post:
+      summary: Submit a question to the RAG Agent
+      description: Sends a question to the OpenAI RAG Agent and receives a grounded response with citations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentRequest'
+      responses:
+        '200':
+          description: Successful response from the agent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    AgentRequest:
+      type: object
+      required:
+        - query_text
+      properties:
+        query_text:
+          type: string
+          description: The natural language question from the user
+          example: "What are the main principles of humanoid robot control?"
+          minLength: 1
+          maxLength: 500
+        metadata:
+          type: object
+          description: Additional context or parameters for the query
+          additionalProperties: true
+
+    AgentResponse:
+      type: object
+      required:
+        - answer
+        - citations
+        - processing_time_ms
+        - status
+      properties:
+        answer:
+          type: string
+          description: The agent's response to the user's question
+          example: "The main principles of humanoid robot control include hierarchical control systems..."
+        citations:
+          type: array
+          description: List of sources used in the response
+          items:
+            $ref: '#/components/schemas/SourceCitation'
+        confidence_score:
+          type: number
+          description: Confidence level of the response
+          minimum: 0.0
+          maximum: 1.0
+          example: 0.85
+        processing_time_ms:
+          type: number
+          description: Time taken to process the request in milliseconds
+          example: 2450
+        status:
+          type: string
+          description: Status of the request
+          enum: [success, partial, error]
+          example: "success"
+        error_message:
+          type: string
+          description: Error details if status is "error"
+          example: "No relevant content found in the knowledge base"
+
+    SourceCitation:
+      type: object
+      required:
+        - chunk_id
+        - text_preview
+        - url
+        - relevance_score
+      properties:
+        chunk_id:
+          type: string
+          description: Unique identifier for the content chunk
+          example: "chunk_12345"
+        text_preview:
+          type: string
+          description: Short preview of the cited content
+          example: "Humanoid robot control systems typically employ hierarchical architectures with multiple control layers..."
+          maxLength: 500
+        url:
+          type: string
+          description: URL link to the original book content
+          format: uri
+          example: "https://book.example.com/docs/chapter-3/lesson-2#control-systems"
+        section:
+          type: string
+          description: Section name in the book
+          example: "Chapter 3: Robot Control Systems"
+        relevance_score:
+          type: number
+          description: Similarity score of the citation to the query
+          minimum: 0.0
+          maximum: 1.0
+          example: 0.87
+        page_reference:
+          type: string
+          description: Page or location reference in the book
+          example: "Page 45"
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - error_code
+      properties:
+        error:
+          type: string
+          description: Error message
+          example: "Invalid query parameters"
+        error_code:
+          type: string
+          description: Error code
+          example: "INVALID_QUERY"
+        details:
+          type: object
+          description: Additional error details
+          additionalProperties: true

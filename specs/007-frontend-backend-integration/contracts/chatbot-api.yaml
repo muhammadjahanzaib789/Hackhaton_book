@@ -1,0 +1,201 @@
+openapi: 3.0.0
+info:
+  title: RAG Chatbot API
+  description: API for the embedded RAG chatbot functionality
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000/v1
+    description: Development server
+  - url: https://api.example.com/v1
+    description: Production server
+
+paths:
+  /agent/query:
+    post:
+      summary: Submit a query to the RAG agent
+      description: Send a user query to the backend RAG agent and receive a grounded response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatQuery'
+      responses:
+        '200':
+          description: Successful response from the RAG agent
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: Bad request - invalid query parameters
+        '500':
+          description: Internal server error
+      tags:
+        - Agent
+
+  /agent/health:
+    get:
+      summary: Check health of the agent service
+      description: Verify that the RAG agent service is operational
+      responses:
+        '200':
+          description: Agent service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+        '500':
+          description: Agent service is unhealthy
+      tags:
+        - Agent
+
+components:
+  schemas:
+    ChatQuery:
+      type: object
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          description: The user's question
+          example: "What are the key principles of embodied cognition?"
+        mode:
+          type: string
+          description: Query mode - full_book or selected_text
+          enum: [full_book, selected_text]
+          default: full_book
+          example: "full_book"
+        selected_text:
+          type: string
+          description: Text selected by user for selected_text mode
+          example: "Embodied cognition emphasizes the role of the body in cognitive processes..."
+        max_tokens:
+          type: integer
+          description: Maximum number of tokens in the response
+          minimum: 1
+          maximum: 2000
+          default: 500
+          example: 500
+        temperature:
+          type: number
+          description: Controls randomness in the response
+          minimum: 0.0
+          maximum: 2.0
+          default: 0.7
+          example: 0.7
+        metadata:
+          type: object
+          description: Additional metadata for tracking
+          example: {"user_id": "123", "session_id": "abc"}
+
+    ChatResponse:
+      type: object
+      required:
+        - answer
+        - citations
+        - query
+      properties:
+        answer:
+          type: string
+          description: The AI-generated response
+          example: "Embodied cognition is a theory that emphasizes the role of the body in cognitive processes..."
+        citations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Citation'
+          description: List of citations supporting the response
+        query:
+          type: string
+          description: The original query that generated this response
+          example: "What are the key principles of embodied cognition?"
+        tokens_used:
+          type: integer
+          description: Number of tokens in the response
+          example: 150
+        confidence:
+          type: number
+          description: Confidence score of the response
+          minimum: 0.0
+          maximum: 1.0
+          example: 0.85
+
+    Citation:
+      type: object
+      required:
+        - id
+        - source_document
+        - chunk_text
+        - relevance_score
+        - url
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the citation
+          example: "citation_1"
+        source_document:
+          type: string
+          description: Name of the source document
+          example: "physical_ai_book.pdf"
+        document_title:
+          type: string
+          description: Title of the document
+          example: "Physical AI Fundamentals"
+        page_number:
+          type: integer
+          description: Page number where content appears
+          example: 15
+        section_title:
+          type: string
+          description: Title of the section
+          example: "Embodied Cognition"
+        chunk_text:
+          type: string
+          description: The actual text content of the citation
+          example: "Embodied cognition emphasizes the role of the body in cognitive processes..."
+        relevance_score:
+          type: number
+          description: Relevance score between 0.0 and 1.0
+          minimum: 0.0
+          maximum: 1.0
+          example: 0.85
+        url:
+          type: string
+          description: URL to navigate to the source
+          format: uri
+          example: "/documents/physical_ai_book.pdf#page=15"
+        position_in_document:
+          type: integer
+          description: Position within the document
+          example: 15
+        context_before:
+          type: string
+          description: Context before the citation text
+          example: "Previous context..."
+        context_after:
+          type: string
+          description: Context after the citation text
+          example: "Following context..."
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - service
+      properties:
+        status:
+          type: string
+          description: Health status
+          enum: [healthy, unhealthy]
+          example: "healthy"
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the health check
+          example: "2024-01-01T10:00:00Z"
+        service:
+          type: string
+          description: Name of the service
+          example: "rag-agent"
