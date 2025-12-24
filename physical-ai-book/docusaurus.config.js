@@ -12,13 +12,13 @@ const config = {
   favicon: 'img/favicon.ico',
 
   // Set the production url of your site here
-  url: 'https://sheheryarkhan2003.github.io',
+  url: 'https://muhammadjahanzaib789.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   baseUrl: '/',
 
   // GitHub pages deployment config
-  organizationName: 'sheheryarkhan2003', // Usually your GitHub org/user name
-  projectName: 'physical-ai-book', // Usually your repo name
+  organizationName: 'muhammadjahanzaib789', // Usually your GitHub org/user name
+  projectName: 'Hackhaton_book', // Usually your repo name
 
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
@@ -40,7 +40,7 @@ const config = {
           sidebarPath: require.resolve('./sidebars.js'),
           // Please change this to your repo.
           editUrl:
-            'https://github.com/sheheryarkhan2003/physical_ai_native-book/tree/main/',
+            'https://github.com/muhammadjahanzaib789/physical-ai-book/tree/main/',
         },
         blog: false, // Disable blog
         theme: {
@@ -77,7 +77,7 @@ const config = {
             label: 'Modules',
           },
           {
-            href: 'https://github.com/sheheryarkhan2003/physical_ai_native-book',
+            href: 'https://github.com/muhammadjahanzaib789/Hackhaton_book',
             label: 'GitHub',
             position: 'right',
           },
@@ -125,7 +125,7 @@ const config = {
             items: [
               {
                 label: 'GitHub',
-                href: 'https://github.com/sheheryarkhan2003/physical_ai_native-book',
+                href: 'https://github.com/muhammadjahanzaib789/Hackhaton_book',
               },
               {
                 label: 'ROS 2 Docs',
