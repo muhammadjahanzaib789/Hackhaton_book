@@ -50,6 +50,14 @@ const config = {
     ],
   ],
 
+  scripts: [
+    {
+      src: '/js/chatbot-loader.js',
+      async: true,
+      defer: true,
+    }
+  ],
+
   themeConfig:
     /** @type {import('@docusaurus/preset-classic').ThemeConfig} */
     ({
