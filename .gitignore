@@ -54,3 +54,6 @@ coverage/
 # package-lock.json
 # yarn.lock
 .gemini/
+
+# Backend (runtime files, not source code)
+backend/
